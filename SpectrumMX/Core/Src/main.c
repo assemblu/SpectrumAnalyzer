@@ -104,6 +104,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  int a = 0;
 	  int b = 0;
+	  int c = 0;
   }
   /* USER CODE END 3 */
 }
