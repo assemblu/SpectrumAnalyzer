@@ -43,6 +43,7 @@
 I2S_HandleTypeDef hi2s1;
 I2S_HandleTypeDef hi2s2;
 DMA_HandleTypeDef hdma_spi1_rx;
+DMA_HandleTypeDef hdma_spi2_tx;
 
 /* USER CODE BEGIN PV */
 
@@ -95,7 +96,8 @@ int main(void)
   MX_I2S1_Init();
   MX_I2S2_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_I2S_Receive_DMA(&hi2s1, rxBuffer, 4);
+  HAL_I2S_Transmit_DMA(&hi2s2, txBuffer, 4);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -227,7 +229,7 @@ static void MX_I2S2_Init(void)
   hi2s2.Init.Mode = I2S_MODE_MASTER_TX;
   hi2s2.Init.Standard = I2S_STANDARD_PHILIPS;
   hi2s2.Init.DataFormat = I2S_DATAFORMAT_24B;
-  hi2s2.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
+  hi2s2.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
   hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_48K;
   hi2s2.Init.CPOL = I2S_CPOL_LOW;
   hi2s2.Init.ClockSource = I2S_CLOCK_PLL;
@@ -250,8 +252,12 @@ static void MX_DMA_Init(void)
 
   /* DMA controller clock enable */
   __HAL_RCC_DMA2_CLK_ENABLE();
+  __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
+  /* DMA1_Stream4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream4_IRQn);
   /* DMA2_Stream0_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
@@ -274,7 +280,25 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s1)
+{
+	  int left=(rxBuf[0]<<16 | rxBuf[1]);
+	  int right=(rxBuf[2]<<16 | rxBuf[3]);
+	  txBuf[0]=(left>>16)&0xFFFF;
+	  txBuf[1]=left&0xFFFF;
+	  txBuf[2]=(right>>16)&0xFFFF;
+	  txBuf[3]=right&0xFFFF;
+}
 
+void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s1)
+{
+	  int left=(rxBuf[4]<<16 | rxBuf[5]);
+	  int right=(rxBuf[6]<<16 | rxBuf[7]);
+	  txBuf[4]=(left>>16)&0xFFFF;
+	  txBuf[5]=left&0xFFFF;
+	  txBuf[6]=(right>>16)&0xFFFF;
+	  txBuf[7]=right&0xFFFF;
+}
 /* USER CODE END 4 */
 
 /**
