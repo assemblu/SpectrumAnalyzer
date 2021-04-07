@@ -42,6 +42,7 @@
 /* Private variables ---------------------------------------------------------*/
 I2S_HandleTypeDef hi2s1;
 I2S_HandleTypeDef hi2s2;
+DMA_HandleTypeDef hdma_spi1_rx;
 
 /* USER CODE BEGIN PV */
 
@@ -50,6 +51,7 @@ I2S_HandleTypeDef hi2s2;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_I2S1_Init(void);
 static void MX_I2S2_Init(void);
 /* USER CODE BEGIN PFP */
@@ -89,6 +91,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_I2S1_Init();
   MX_I2S2_Init();
   /* USER CODE BEGIN 2 */
@@ -187,7 +190,7 @@ static void MX_I2S1_Init(void)
 
   /* USER CODE END I2S1_Init 1 */
   hi2s1.Instance = SPI1;
-  hi2s1.Init.Mode = I2S_MODE_MASTER_TX;
+  hi2s1.Init.Mode = I2S_MODE_MASTER_RX;
   hi2s1.Init.Standard = I2S_STANDARD_PHILIPS;
   hi2s1.Init.DataFormat = I2S_DATAFORMAT_24B;
   hi2s1.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
@@ -236,6 +239,22 @@ static void MX_I2S2_Init(void)
   /* USER CODE BEGIN I2S2_Init 2 */
 
   /* USER CODE END I2S2_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
 
 }
 
