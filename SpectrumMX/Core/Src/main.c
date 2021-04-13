@@ -16,10 +16,12 @@
   *
   ******************************************************************************
   */
+#define ARM_MATH_CM4
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
 
+#include "main.h"
+#include "arm_math.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -61,8 +63,17 @@ static void MX_I2S2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint16_t rxBuffer[8];
-uint16_t txBuffer[8];
+uint16_t rxBuf[16384];
+uint16_t txBuf[16384];
+float fft_in_buf[2048];
+float fft_out_buf[2048];
+
+arm_rfft_fast_instance_f32 fft_handler;
+
+float real_fsample = 46875;
+uint8_t callback_state = 0;
+uint8_t outarray[14];
+uint8_t uartfree = 1;
 /* USER CODE END 0 */
 
 /**
@@ -97,8 +108,10 @@ int main(void)
   MX_I2S1_Init();
   MX_I2S2_Init();
   /* USER CODE BEGIN 2 */
-  HAL_I2S_Receive_DMA(&hi2s1, rxBuffer, 4);
-  HAL_I2S_Transmit_DMA(&hi2s2, txBuffer, 4);
+  HAL_I2S_Receive_DMA(&hi2s1, rxBuf, 8192);
+  HAL_I2S_Transmit_DMA(&hi2s2, txBuf, 8192);
+
+  arm_rfft_fast_init_f32(&fft_handler, 2048);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -108,6 +121,39 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+	  //do audio loopback and push mono-sum to fft_in_buf
+
+	  int fft_in_ptr = 0;
+	  if (callback_state == 1) {
+		  for (int i=0; i<8192; i=i+4) {
+			  fft_in_buf[fft_in_ptr] = (float) ((int) (rxBuf[i]<<16)|rxBuf[i+1]);
+			  fft_in_buf[fft_in_ptr] += (float) ((int) (rxBuf[i+2]<<16)|rxBuf[i+3]);
+			  txBuf[i] = rxBuf[i];
+			  txBuf[i+1] = rxBuf[i+1];
+			  txBuf[i+2] = rxBuf[i+2];
+			  txBuf[i+3] = rxBuf[i+3];
+			  fft_in_ptr++;
+		  }
+
+		  DoFFT();
+	  }
+
+	  if (callback_state == 2) {
+		  for (int i=8192; i<16384; i=i+4) {
+			  fft_in_buf[fft_in_ptr] = (float) ((int) (rxBuf[i]<<16)|rxBuf[i+1]);
+			  fft_in_buf[fft_in_ptr] += (float) ((int) (rxBuf[i+2]<<16)|rxBuf[i+3]);
+			  txBuf[i] = rxBuf[i];
+			  txBuf[i+1] = rxBuf[i+1];
+			  txBuf[i+2] = rxBuf[i+2];
+			  txBuf[i+3] = rxBuf[i+3];
+			  fft_in_ptr++;
+		  }
+
+
+		  DoFFT();
+
+	  }
   }
   /* USER CODE END 3 */
 }
@@ -281,24 +327,70 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+float complexABS(float real, float compl)
+{
+	return sqrtf(real*real+compl*compl);
+}
+
+void DoFFT()
+{
+	//Do FFT
+	arm_rfft_fast_f32(&fft_handler, &fft_in_buf,&fft_out_buf,0);
+
+	int freqs[1024];
+	int freqpoint = 0;
+	int offset = 150; //variable noisefloor offset
+
+	//calculate abs values and linear-to-dB
+	for (int i=0; i<2048; i=i+2) {
+		freqs[freqpoint] = (int)(20*log10f(complexABS(fft_out_buf[i], fft_out_buf[i+1])))-offset;
+		if (freqs[freqpoint]<0) freqs[freqpoint]=0;
+		freqpoint++;
+	}
+
+/*
+	//push out data to Uart
+	outarray[0] = 0xff; //frame start
+	outarray[1] = (uint8_t)freqs[1]; //31-5Hz
+	outarray[2] = (uint8_t)freqs[3]; //63 Hz
+	outarray[3] = (uint8_t)freqs[5]; //125 Hz
+	outarray[4] = (uint8_t)freqs[11]; //250 Hz
+	outarray[5] = (uint8_t)freqs[22]; //500 Hz
+	outarray[6] = (uint8_t)freqs[44]; //1 kHz
+	outarray[7] = (uint8_t)freqs[96]; //2.2 kHz
+	outarray[8] = (uint8_t)freqs[197]; //4.5 kHz
+	outarray[9] = (uint8_t)freqs[393]; //9 kHz
+	outarray[10] = (uint8_t)freqs[655]; //15 lHz
+
+
+	//if (uartfree==1) HAL_UART_Transmit_DMA(&huart2, &outarray[0], 11);
+	uartfree = 0;
+	*/
+	callback_state=0;
+}
+
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s1)
 {
-	  int left=(rxBuffer[0]<<16 | rxBuffer[1]);
-	  int right=(rxBuffer[2]<<16 | rxBuffer[3]);
-	  txBuffer[0]=(left>>16)&0xFFFF;
-	  txBuffer[1]=left&0xFFFF;
-	  txBuffer[2]=(right>>16)&0xFFFF;
-	  txBuffer[3]=right&0xFFFF;
+	  int left=(rxBuf[0]<<16 | rxBuf[1]);
+	  int right=(rxBuf[2]<<16 | rxBuf[3]);
+	  txBuf[0]=(left>>16)&0xFFFF;
+	  txBuf[1]=left&0xFFFF;
+	  txBuf[2]=(right>>16)&0xFFFF;
+	  txBuf[3]=right&0xFFFF;
+
+	  callback_state = 1;
 }
 
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s1)
 {
-	  int left=(rxBuffer[4]<<16 | rxBuffer[5]);
-	  int right=(rxBuffer[6]<<16 | rxBuffer[7]);
-	  txBuffer[4]=(left>>16)&0xFFFF;
-	  txBuffer[5]=left&0xFFFF;
-	  txBuffer[6]=(right>>16)&0xFFFF;
-	  txBuffer[7]=right&0xFFFF;
+	  int left=(rxBuf[4]<<16 | rxBuf[5]);
+	  int right=(rxBuf[6]<<16 | rxBuf[7]);
+	  txBuf[4]=(left>>16)&0xFFFF;
+	  txBuf[5]=left&0xFFFF;
+	  txBuf[6]=(right>>16)&0xFFFF;
+	  txBuf[7]=right&0xFFFF;
+
+	  callback_state = 2;
 }
 /* USER CODE END 4 */
 
