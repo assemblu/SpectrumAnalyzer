@@ -61,7 +61,8 @@ static void MX_I2S2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+uint16_t rxBuffer[8];
+uint16_t txBuffer[8];
 /* USER CODE END 0 */
 
 /**
@@ -282,22 +283,22 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s1)
 {
-	  int left=(rxBuf[0]<<16 | rxBuf[1]);
-	  int right=(rxBuf[2]<<16 | rxBuf[3]);
-	  txBuf[0]=(left>>16)&0xFFFF;
-	  txBuf[1]=left&0xFFFF;
-	  txBuf[2]=(right>>16)&0xFFFF;
-	  txBuf[3]=right&0xFFFF;
+	  int left=(rxBuffer[0]<<16 | rxBuffer[1]);
+	  int right=(rxBuffer[2]<<16 | rxBuffer[3]);
+	  txBuffer[0]=(left>>16)&0xFFFF;
+	  txBuffer[1]=left&0xFFFF;
+	  txBuffer[2]=(right>>16)&0xFFFF;
+	  txBuffer[3]=right&0xFFFF;
 }
 
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s1)
 {
-	  int left=(rxBuf[4]<<16 | rxBuf[5]);
-	  int right=(rxBuf[6]<<16 | rxBuf[7]);
-	  txBuf[4]=(left>>16)&0xFFFF;
-	  txBuf[5]=left&0xFFFF;
-	  txBuf[6]=(right>>16)&0xFFFF;
-	  txBuf[7]=right&0xFFFF;
+	  int left=(rxBuffer[4]<<16 | rxBuffer[5]);
+	  int right=(rxBuffer[6]<<16 | rxBuffer[7]);
+	  txBuffer[4]=(left>>16)&0xFFFF;
+	  txBuffer[5]=left&0xFFFF;
+	  txBuffer[6]=(right>>16)&0xFFFF;
+	  txBuffer[7]=right&0xFFFF;
 }
 /* USER CODE END 4 */
 
