@@ -1,0 +1,15 @@
+C:\Users\Moritz\source\repos\SpectrumUI\SpectrumUI\bin\Debug\SpectrumUI.exe.config
+C:\Users\Moritz\source\repos\SpectrumUI\SpectrumUI\bin\Debug\SpectrumUI.exe
+C:\Users\Moritz\source\repos\SpectrumUI\SpectrumUI\bin\Debug\SpectrumUI.pdb
+C:\Users\Moritz\source\repos\SpectrumUI\SpectrumUI\obj\Debug\SpectrumUI.csprojAssemblyReference.cache
+C:\Users\Moritz\source\repos\SpectrumUI\SpectrumUI\obj\Debug\SpectrumUI.Form1.resources
+C:\Users\Moritz\source\repos\SpectrumUI\SpectrumUI\obj\Debug\SpectrumUI.Properties.Resources.resources
+C:\Users\Moritz\source\repos\SpectrumUI\SpectrumUI\obj\Debug\SpectrumUI.csproj.GenerateResource.cache
+C:\Users\Moritz\source\repos\SpectrumUI\SpectrumUI\obj\Debug\SpectrumUI.csproj.CoreCompileInputs.cache
+C:\Users\Moritz\source\repos\SpectrumUI\SpectrumUI\obj\Debug\SpectrumUI.exe
+C:\Users\Moritz\source\repos\SpectrumUI\SpectrumUI\obj\Debug\SpectrumUI.pdb
+C:\Users\Moritz\source\repos\SpectrumUI\SpectrumUI\bin\Debug\ScottPlot.dll
+C:\Users\Moritz\source\repos\SpectrumUI\SpectrumUI\bin\Debug\ScottPlot.WinForms.dll
+C:\Users\Moritz\source\repos\SpectrumUI\SpectrumUI\bin\Debug\System.Drawing.Common.dll
+C:\Users\Moritz\source\repos\SpectrumUI\SpectrumUI\obj\Debug\SpectrumUI.csproj.CopyComplete
+C:\Users\Moritz\source\repos\SpectrumUI\SpectrumUI\obj\Debug\SpectrumUI.SettingsDialog.resources
