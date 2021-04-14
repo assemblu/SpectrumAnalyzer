@@ -62,7 +62,7 @@ main-build: SpectrumMX.elf secondary-outputs
 
 # Tool invocations
 SpectrumMX.elf: $(OBJS) $(USER_OBJS) C:\dev\SpectrumAnalyzer\SpectrumMX\STM32F446RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "SpectrumMX.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\dev\SpectrumAnalyzer\SpectrumMX\STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="SpectrumMX.map" -Wl,--gc-sections -static -Wl,--start-group -larm_cortexM4lf_math -Wl,--end-group -L"C:\dev\SpectrumAnalyzer\SpectrumMX\Libs" -L"C:\dev\SpectrumAnalyzer\SpectrumMX\Libs" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -o "SpectrumMX.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\dev\SpectrumAnalyzer\SpectrumMX\STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="SpectrumMX.map" -Wl,--gc-sections -static -Wl,--start-group -larm_cortexM4lf_math -Wl,--end-group -L"C:\dev\SpectrumAnalyzer\SpectrumMX\Libs" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

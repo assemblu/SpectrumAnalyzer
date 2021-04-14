@@ -1,0 +1,6 @@
+C:\dev\SpectrumAnalyzer\UI\UI\UI\obj\Debug\netcoreapp3.1\UI.csprojAssemblyReference.cache
+C:\dev\SpectrumAnalyzer\UI\UI\UI\obj\Debug\netcoreapp3.1\STM32_FFT.Form1.resources
+C:\dev\SpectrumAnalyzer\UI\UI\UI\obj\Debug\netcoreapp3.1\UI.csproj.GenerateResource.cache
+C:\dev\SpectrumAnalyzer\UI\UI\UI\obj\Debug\netcoreapp3.1\UI.AssemblyInfoInputs.cache
+C:\dev\SpectrumAnalyzer\UI\UI\UI\obj\Debug\netcoreapp3.1\UI.AssemblyInfo.cs
+C:\dev\SpectrumAnalyzer\UI\UI\UI\obj\Debug\netcoreapp3.1\UI.csproj.CoreCompileInputs.cache
