@@ -112,6 +112,9 @@ int main(void)
   HAL_I2S_Transmit_DMA(&hi2s2, txBuf, 8192);
 
   arm_rfft_fast_init_f32(&fft_handler, 2048);
+  for (uint16_t i = 0; i < 11; i++) {
+	  outarray[i] = 'A';
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -123,7 +126,6 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
 	  //do audio loopback and push mono-sum to fft_in_buf
-
 	  int fft_in_ptr = 0;
 	  if (callback_state == 1) {
 		  for (int i=0; i<8192; i=i+4) {
