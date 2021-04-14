@@ -17,13 +17,14 @@
   ******************************************************************************
   */
 #define ARM_MATH_CM4
+
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "arm_math.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -115,9 +116,7 @@ int main(void)
   HAL_I2S_Transmit_DMA(&hi2s2, txBuf, 8192);
 
   arm_rfft_fast_init_f32(&fft_handler, 2048);
-  for (uint16_t i = 0; i < 11; i++) {
-	  outarray[i] = 'A';
-  }
+  char test[5] = {'h', 'e', 'l', 'l', 'o'};
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -129,6 +128,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
 	  //do audio loopback and push mono-sum to fft_in_buf
+	  HAL_UART_Transmit(&huart2, test, 5, 100);
 	  int fft_in_ptr = 0;
 	  if (callback_state == 1) {
 		  for (int i=0; i<8192; i=i+4) {
