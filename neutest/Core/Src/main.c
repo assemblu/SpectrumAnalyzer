@@ -62,45 +62,58 @@ static void MX_I2S1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint16_t rxBuf[16384] = {500};
+uint16_t rxBuf[16384];
 uint16_t txBuf[16384];
-float fftInBuf[2048] = {500};
-float fftOutBuf[2048];
+float fft_in_buf[2048];
+float fft_out_buf[2048];
 
-arm_rfft_fast_instance_f32 fftHandler;
 
-float realSample = 48828;
-uint8_t callbackState = 0;
-uint8_t outBuf[14];
-uint8_t uartFree = 1;
+arm_rfft_fast_instance_f32 fft_handler;
 
-float complexABS(float real, float compl)
-{
-	return sqrt(real*real+compl*compl);
+float real_fsample = 46875;
+uint8_t callback_state = 0;
+uint8_t outarray[14];
+uint8_t uartfree = 1;
+
+float complexABS(float real, float compl) {
+	return sqrtf(real*real+compl*compl);
 }
+void DoFFT() {
+	//Do FFT
+	arm_rfft_fast_f32(&fft_handler, &fft_in_buf,&fft_out_buf,0);
 
-void doFFT()
-{
-	arm_rfft_fast_f32(&fftHandler, fftInBuf, fftOutBuf, 0);
+	int freqs[1024];
+	int freqpoint = 0;
+	int offset = 150; //variable noisefloor offset
 
-	int freqs[512];
-	int freqPoint = 0;
-	int offset = 150; // variable noisefloor
-
-	int i = 0;
-	for (i = 0; i< 1024; i += 2)
-	{
-		freqs[freqPoint] = (int)(28*log10f(complexABS(fftOutBuf[i], fftOutBuf[i+1]))) - offset;
-		if (freqs[freqPoint] < 0)
-		{
-			freqs[freqPoint] = 0;
-		}
-		freqPoint++;
+	//calculate abs values and linear-to-dB
+	for (int i=0; i<2048; i=i+2) {
+		freqs[freqpoint] = (int)(20*log10f(complexABS(fft_out_buf[i], fft_out_buf[i+1])))-offset;
+		if (freqs[freqpoint]<0) freqs[freqpoint]=0;
+		freqpoint++;
 	}
 
-	uartFree = 0;
-	callbackState = 0;
+
+	//push out data to Uart
+	outarray[0] = 0xff; //frame start
+	outarray[1] = (uint8_t)freqs[1]; //31-5Hz
+	outarray[2] = (uint8_t)freqs[3]; //63 Hz
+	outarray[3] = (uint8_t)freqs[5]; //125 Hz
+	outarray[4] = (uint8_t)freqs[11]; //250 Hz
+	outarray[5] = (uint8_t)freqs[22]; //500 Hz
+	outarray[6] = (uint8_t)freqs[44]; //1 kHz
+	outarray[7] = (uint8_t)freqs[96]; //2.2 kHz
+	outarray[8] = (uint8_t)freqs[197]; //4.5 kHz
+	outarray[9] = (uint8_t)freqs[393]; //9 kHz
+	outarray[10] = (uint8_t)freqs[655]; //15 lHz
+
+
+	if (uartfree==1) HAL_UART_Transmit_DMA(&huart2, &outarray[0], 11);
+	uartfree = 0;
+	callback_state=0;
+
 }
+
 /* USER CODE END 0 */
 
 /**
@@ -141,7 +154,7 @@ int main(void)
   //HAL_I2S_Transmit_DMA(&hi2s2, txBuf, 16384);
   HAL_I2S_Receive_DMA(&hi2s1, rxBuf, 16384);
 
-  arm_rfft_fast_init_f32(&fftHandler, 2048);
+  arm_rfft_fast_init_f32(&fft_handler, 2048);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -152,57 +165,36 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-	  	  int fftInPtr = 0;
-/*)
-	  	  {
-	  		  int i = 0;
-	  		  for (i = 0; i < 8192; i += 4)
-	  		  {
-	  			  fftInBuf[fftInPtr] = (float) ((int) (rxBuf[i] << 16)|(rxBuf[i+1]));
-	  			  fftInBuf[fftInPtr] += (float) ((int) (rxBuf[i+2] << 16)|(rxBuf[i+3]));
-				  txBuf[i] = rxBuf[i];
-				  txBuf[i+1] = rxBuf[i+1];
-				  txBuf[i+2] = rxBuf[i+2];
-				  txBuf[i+3] = rxBuf[i+3];
-				  fftInPtr++;
-	  		  }
-	  	  }
+	  int fft_in_ptr = 0;
+	  if (callback_state == 1) {
+		  for (int i=0; i<8192; i=i+4) {
+			  fft_in_buf[fft_in_ptr] = (float) ((int) (rxBuf[i]<<16)|rxBuf[i+1]);
+			  fft_in_buf[fft_in_ptr] += (float) ((int) (rxBuf[i+2]<<16)|rxBuf[i+3]);
+			  txBuf[i] = rxBuf[i];
+			  txBuf[i+1] = rxBuf[i+1];
+			  txBuf[i+2] = rxBuf[i+2];
+			  txBuf[i+3] = rxBuf[i+3];
+			  fft_in_ptr++;
+		  }
 
-	  	  if (callbackState == 2)
-	  	  {
-	  		  int i = 8192;
-	  		  for (i = 8192; i < 16384; i += 4)
-	  		  {
-	  			  fftInBuf[fftInPtr] = (float) ((int) (rxBuf[i] << 16)|(rxBuf[i+1]));
-	  			  fftInBuf[fftInPtr] = (float) ((int) (rxBuf[i+2] << 16)|(rxBuf[i+3]));
-				  txBuf[i] = rxBuf[i];
-				  txBuf[i+1] = rxBuf[i+1];
-				  txBuf[i+2] = rxBuf[i+2];
-				  txBuf[i+3] = rxBuf[i+3];
-				  fftInPtr++;
-	  		  }
-	  	  }
-	  	  */
+		  DoFFT();
+	  }
 
-	  	arm_rfft_fast_f32(&fftHandler, &fftInBuf[0], &fftOutBuf[0], 0);
+	  if (callback_state == 2) {
+		  for (int i=8192; i<16384; i=i+4) {
+			  fft_in_buf[fft_in_ptr] = (float) ((int) (rxBuf[i]<<16)|rxBuf[i+1]);
+			  fft_in_buf[fft_in_ptr] += (float) ((int) (rxBuf[i+2]<<16)|rxBuf[i+3]);
+			  txBuf[i] = rxBuf[i];
+			  txBuf[i+1] = rxBuf[i+1];
+			  txBuf[i+2] = rxBuf[i+2];
+			  txBuf[i+3] = rxBuf[i+3];
+			  fft_in_ptr++;
+		  }
 
-	  		int freqs[512];
-	  		int freqPoint = 0;
-	  		int offset = 150; // variable noisefloor
 
-	  		int i = 0;
-	  		for (i = 0; i< 1024; i += 2)
-	  		{
-	  			freqs[freqPoint] = (int)(28*log10f(complexABS(fftOutBuf[i], fftOutBuf[i+1]))) - offset;
-	  			if (freqs[freqPoint] < 0)
-	  			{
-	  				freqs[freqPoint] = 0;
-	  			}
-	  			freqPoint++;
-	  		}
+		  DoFFT();
 
-	  		uartFree = 0;
-	  		callbackState = 0;
+	  }
   }
   /* USER CODE END 3 */
 }
@@ -369,34 +361,32 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-/*
-//void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s1)
-//{
-//	  /*
-//	  int left=(rxBuf[0]<<16 | rxBuf[1]);
-//	  int right=(rxBuf[2]<<16 | rxBuf[3]);
-//	  txBuf[0]=(left>>16)&0xFFFF;
-//	  txBuf[1]=left&0xFFFF;
-//	  txBuf[2]=(right>>16)&0xFFFF;
-//	  txBuf[3]=right&0xFFFF;
-//	  */
-//	callbackState = 1;
-//}
+void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s1)
+{
+	  /*
+	  int left=(rxBuf[0]<<16 | rxBuf[1]);
+	  int right=(rxBuf[2]<<16 | rxBuf[3]);
+	  txBuf[0]=(left>>16)&0xFFFF;
+	  txBuf[1]=left&0xFFFF;
+	  txBuf[2]=(right>>16)&0xFFFF;
+	  txBuf[3]=right&0xFFFF;
+	  */
+	callback_state = 1;
+}
 
 
-//void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s1)
-//{
-//		/*
-//	  int left=(rxBuf[4]<<16 | rxBuf[5]);
-//	  int right=(rxBuf[6]<<16 | rxBuf[7]);
-//	  txBuf[4]=(left>>16)&0xFFFF;
-//	  txBuf[5]=left&0xFFFF;
-//	  txBuf[6]=(right>>16)&0xFFFF;
-//	  txBuf[7]=right&0xFFFF;
-//	  */
-//	callbackState = 2;
-//}
+void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s1)
+{
+		/*
+	  int left=(rxBuf[4]<<16 | rxBuf[5]);
+	  int right=(rxBuf[6]<<16 | rxBuf[7]);
+	  txBuf[4]=(left>>16)&0xFFFF;
+	  txBuf[5]=left&0xFFFF;
+	  txBuf[6]=(right>>16)&0xFFFF;
+	  txBuf[7]=right&0xFFFF;
+	  */
+	callback_state = 2;
+}
 
 /* USER CODE END 4 */
 
