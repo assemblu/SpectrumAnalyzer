@@ -107,8 +107,10 @@ int main(void)
   MX_I2S1_Init();
   MX_I2S2_Init();
   /* USER CODE BEGIN 2 */
-  HAL_I2S_Transmit_DMA(&hi2s2, txBuf, 4);
-  HAL_I2S_Receive_DMA(&hi2s1, rxBuf, 4);
+  HAL_I2S_Transmit_DMA(&hi2s2, txBuf, 16384);
+  HAL_I2S_Receive_DMA(&hi2s1, rxBuf, 16384);
+
+  arm_rfft_fast_init_f32(&fftHandler, 2048);
   /* USER CODE END 2 */
 
   /* Infinite loop */
