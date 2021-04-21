@@ -67,6 +67,7 @@ uint16_t txBuf[16384];
 float fftInBuf[2048];
 float fftOutBuf[2048];
 
+arm_rfft_fast_instance_f32 fftHandler;
 /* USER CODE END 0 */
 
 /**
