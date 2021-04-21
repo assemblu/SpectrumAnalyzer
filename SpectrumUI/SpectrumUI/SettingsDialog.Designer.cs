@@ -38,56 +38,64 @@ namespace SpectrumUI
             // 
             // height
             // 
-            this.height.Location = new System.Drawing.Point(58, 38);
+            this.height.Location = new System.Drawing.Point(77, 47);
+            this.height.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.height.Name = "height";
-            this.height.Size = new System.Drawing.Size(71, 20);
-            this.height.TabIndex = 0;
+            this.height.Size = new System.Drawing.Size(93, 22);
+            this.height.TabIndex = 1;
+            this.height.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.width_KeyPress);
             // 
             // width
             // 
-            this.width.Location = new System.Drawing.Point(58, 12);
+            this.width.Location = new System.Drawing.Point(77, 15);
+            this.width.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.width.Name = "width";
-            this.width.Size = new System.Drawing.Size(71, 20);
-            this.width.TabIndex = 1;
+            this.width.Size = new System.Drawing.Size(93, 22);
+            this.width.TabIndex = 0;
+            this.width.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.width_KeyPress);
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(17, 15);
+            this.label1.Location = new System.Drawing.Point(23, 18);
+            this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(35, 13);
+            this.label1.Size = new System.Drawing.Size(44, 17);
             this.label1.TabIndex = 2;
             this.label1.Text = "Width";
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(17, 41);
+            this.label2.Location = new System.Drawing.Point(23, 50);
+            this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(38, 13);
+            this.label2.Size = new System.Drawing.Size(49, 17);
             this.label2.TabIndex = 3;
             this.label2.Text = "Height";
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(58, 76);
+            this.button1.Location = new System.Drawing.Point(77, 94);
+            this.button1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(71, 23);
-            this.button1.TabIndex = 4;
+            this.button1.Size = new System.Drawing.Size(95, 28);
+            this.button1.TabIndex = 3;
             this.button1.Text = "button1";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // SettingsDialog
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(184, 111);
+            this.ClientSize = new System.Drawing.Size(245, 137);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.width);
             this.Controls.Add(this.height);
+            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.Name = "SettingsDialog";
             this.Text = "SettingsDialog";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.SettingsDialog_FormClosing);

@@ -41,5 +41,31 @@ namespace SpectrumUI
         {
             if(this.DialogResult!=DialogResult.OK) this.DialogResult = DialogResult.Cancel;
         }
+        private void width_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if(e.KeyChar==(char)Keys.Return)
+            {
+                try
+                {
+                    this.newHeight = Convert.ToUInt16(height.Text);
+                    this.newWidth = Convert.ToUInt16(width.Text);
+                    if (newHeight >= 500 || newWidth >= 500)
+                    {
+                        this.DialogResult = DialogResult.OK;
+                        this.Close();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Size must be at least 500px", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+                catch
+                {
+                    MessageBox.Show("Invalid character", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+
+
+            }
+        }
     }
 }

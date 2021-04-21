@@ -13,6 +13,8 @@ namespace SpectrumUI
 {
     public partial class Form1 : Form
     {
+
+        string selectedPort;
         public Form1()
         {
             InitializeComponent();
@@ -25,18 +27,20 @@ namespace SpectrumUI
 Moritz Breuer (EPA), Peter van Breugel (EIE), Emirhan Gocturk (ACS), Stef Mebius (EIE)
 For source code visit github.com/<whatever>
 ";
-            System.Media.SystemSounds.Exclamation.Play();
+          //  System.Media.SystemSounds.Exclamation.Play();
             MessageBox.Show(abtMsg, "About");
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            updatePortItems();
             double[] xs = { 31.5, 63, 100, 200, 500, 1000, 2500, 5000, 10000, 15100 };
             double[] ys = { 40,40,100,100,150,255,150,100,40,40 };
             var p=plotWindow.plt.PlotBar(xs,ys);
             p.barWidth = 10;
             p.showValues = true;
             plotWindow.Render();
+
         }
     
         void updatePortItems()
@@ -44,13 +48,9 @@ For source code visit github.com/<whatever>
             portToolStripMenuItem.DropDown.Items.Clear();
             foreach ( string ports in SerialPort.GetPortNames())
             {
-                portToolStripMenuItem.DropDown.Items.Add(ports);
+                var port = portToolStripMenuItem.DropDown.Items.Add(ports);
+                port.Click += ComSelection;
             }
-        }
-
-        private void portToolStripMenuItem_MouseHover(object sender, EventArgs e)
-        {
-            updatePortItems();
         }
 
         private void quitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -74,6 +74,12 @@ For source code visit github.com/<whatever>
             }
         }
 
+        private void ComSelection(object sender, EventArgs e)
+        {
+            ToolStripMenuItem selected = (ToolStripMenuItem)sender;
+            selected.Checked = true;
+            selectedPort = selected.Text;
+        }
         private void resizeToolStripMenuItem_Click(object sender, EventArgs e)
         {
             SettingsDialog s = new SettingsDialog("Resize");
