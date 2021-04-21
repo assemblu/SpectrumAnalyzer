@@ -68,6 +68,11 @@ float fftInBuf[2048];
 float fftOutBuf[2048];
 
 arm_rfft_fast_instance_f32 fftHandler;
+
+float realSample = 48828;
+uint8_t callbackState = 0;
+uint8_t outBuf[14];
+uint8_t uartFree = 1;
 /* USER CODE END 0 */
 
 /**
