@@ -61,8 +61,8 @@ all: main-build
 main-build: neutest.elf secondary-outputs
 
 # Tool invocations
-neutest.elf: $(OBJS) $(USER_OBJS) C:\Users\Moritz\STM32CubeIDE\workspace_1.6.0\neutest\STM32F446RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "neutest.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\Moritz\STM32CubeIDE\workspace_1.6.0\neutest\STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="neutest.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+neutest.elf: $(OBJS) $(USER_OBJS) C:\dev\SpectrumAnalyzer\neutest\STM32F446RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "neutest.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\dev\SpectrumAnalyzer\neutest\STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="neutest.map" -Wl,--gc-sections -static -Wl,--start-group -larm_cortexM4lf_math -Wl,--end-group -L"C:\dev\SpectrumAnalyzer\neutest\Libs" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
