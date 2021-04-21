@@ -59,10 +59,10 @@ static void MX_I2S1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint16_t rxBuf[16384];
-uint16_t txBuf[16384];
-float fftInBuf[2048];
-float fftOutBuf[2048];
+uint16_t rxBuf[4096];
+uint16_t txBuf[4096];
+float fftInBuf[512];
+float fftOutBuf[512];
 
 arm_rfft_fast_instance_f32 fftHandler;
 
@@ -104,9 +104,9 @@ int main(void)
   MX_I2S1_Init();
   /* USER CODE BEGIN 2 */
   //HAL_I2S_Transmit_DMA(&hi2s2, txBuf, 16384);
-  HAL_I2S_Receive_DMA(&hi2s1, rxBuf, 16384);
+  HAL_I2S_Receive_DMA(&hi2s1, rxBuf, 4096);
 
-  arm_rfft_fast_init_f32(&fftHandler, 2048);
+  arm_rfft_fast_init_f32(&fftHandler, 1024);
   /* USER CODE END 2 */
 
   /* Infinite loop */

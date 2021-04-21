@@ -21,9 +21,9 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, DATA
   8 .data         00000078  20000000  080188dc  00030000  2**2
                   CONTENTS, ALLOC, LOAD, DATA
-  9 .bss          000140f4  20000078  08018954  00030078  2**2
+  9 .bss          000050f4  20000078  08018954  00030078  2**2
                   ALLOC
- 10 ._user_heap_stack 00000604  2001416c  08018954  0003416c  2**0
+ 10 ._user_heap_stack 00000604  2000516c  08018954  0003516c  2**0
                   ALLOC
  11 .ARM.attributes 00000030  00000000  00000000  00030078  2**0
                   CONTENTS, READONLY
@@ -1270,14 +1270,14 @@ int main(void)
  8000f4a:	f000 f985 	bl	8001258 <MX_I2S1_Init>
   /* USER CODE BEGIN 2 */
   //HAL_I2S_Transmit_DMA(&hi2s2, txBuf, 16384);
-  HAL_I2S_Receive_DMA(&hi2s1, rxBuf, 16384);
- 8000f4e:	f44f 4280 	mov.w	r2, #16384	; 0x4000
+  HAL_I2S_Receive_DMA(&hi2s1, rxBuf, 4096);
+ 8000f4e:	f44f 5280 	mov.w	r2, #4096	; 0x1000
  8000f52:	4970      	ldr	r1, [pc, #448]	; (8001114 <main+0x1e0>)
  8000f54:	4870      	ldr	r0, [pc, #448]	; (8001118 <main+0x1e4>)
  8000f56:	f001 fba3 	bl	80026a0 <HAL_I2S_Receive_DMA>
 
-  arm_rfft_fast_init_f32(&fftHandler, 2048);
- 8000f5a:	f44f 6100 	mov.w	r1, #2048	; 0x800
+  arm_rfft_fast_init_f32(&fftHandler, 1024);
+ 8000f5a:	f44f 6180 	mov.w	r1, #1024	; 0x400
  8000f5e:	486f      	ldr	r0, [pc, #444]	; (800111c <main+0x1e8>)
  8000f60:	f002 fffc 	bl	8003f5c <arm_rfft_fast_init_f32>
   while (1)
@@ -1493,12 +1493,12 @@ int main(void)
   {
  8001110:	e728      	b.n	8000f64 <main+0x30>
  8001112:	bf00      	nop
- 8001114:	2000c0b0 	.word	0x2000c0b0
- 8001118:	200140b0 	.word	0x200140b0
- 800111c:	20004098 	.word	0x20004098
+ 8001114:	200030b0 	.word	0x200030b0
+ 8001118:	200050b0 	.word	0x200050b0
+ 800111c:	20001098 	.word	0x20001098
  8001120:	20000094 	.word	0x20000094
  8001124:	20000098 	.word	0x20000098
- 8001128:	200040b0 	.word	0x200040b0
+ 8001128:	200010b0 	.word	0x200010b0
 
 0800112c <SystemClock_Config>:
 /**
@@ -1745,7 +1745,7 @@ static void MX_I2S1_Init(void)
 }
  80012a8:	bf00      	nop
  80012aa:	bd80      	pop	{r7, pc}
- 80012ac:	200140b0 	.word	0x200140b0
+ 80012ac:	200050b0 	.word	0x200050b0
  80012b0:	40013000 	.word	0x40013000
 
 080012b4 <MX_DMA_Init>:
@@ -2008,9 +2008,9 @@ void doFFT()
  80014d2:	3710      	adds	r7, #16
  80014d4:	46bd      	mov	sp, r7
  80014d6:	bd80      	pop	{r7, pc}
- 80014d8:	20002098 	.word	0x20002098
+ 80014d8:	20000898 	.word	0x20000898
  80014dc:	20000098 	.word	0x20000098
- 80014e0:	20004098 	.word	0x20004098
+ 80014e0:	20001098 	.word	0x20001098
  80014e4:	20000000 	.word	0x20000000
  80014e8:	20000094 	.word	0x20000094
 
@@ -2336,7 +2336,7 @@ void HAL_I2S_MspInit(I2S_HandleTypeDef* hi2s)
  80016ac:	40023800 	.word	0x40023800
  80016b0:	40020000 	.word	0x40020000
  80016b4:	40020800 	.word	0x40020800
- 80016b8:	200140f8 	.word	0x200140f8
+ 80016b8:	200050f8 	.word	0x200050f8
  80016bc:	40026410 	.word	0x40026410
 
 080016c0 <NMI_Handler>:
@@ -2518,7 +2518,7 @@ void DMA2_Stream0_IRQHandler(void)
  800171e:	bf00      	nop
  8001720:	bd80      	pop	{r7, pc}
  8001722:	bf00      	nop
- 8001724:	200140f8 	.word	0x200140f8
+ 8001724:	200050f8 	.word	0x200050f8
 
 08001728 <SystemInit>:
   *         configuration.
@@ -2639,7 +2639,7 @@ LoopFillZerobss:
   ldr r2, =_sbss
  8001794:	20000078 	.word	0x20000078
   ldr r4, =_ebss
- 8001798:	2001416c 	.word	0x2001416c
+ 8001798:	2000516c 	.word	0x2000516c
 
 0800179c <ADC_IRQHandler>:
  * @retval None       
@@ -2802,7 +2802,7 @@ __weak void HAL_IncTick(void)
  8001860:	4770      	bx	lr
  8001862:	bf00      	nop
  8001864:	2000000c 	.word	0x2000000c
- 8001868:	20014168 	.word	0x20014168
+ 8001868:	20005168 	.word	0x20005168
 
 0800186c <HAL_GetTick>:
   * @note This function is declared as __weak to be overwritten in case of other 
@@ -2822,7 +2822,7 @@ __weak uint32_t HAL_GetTick(void)
  8001878:	f85d 7b04 	ldr.w	r7, [sp], #4
  800187c:	4770      	bx	lr
  800187e:	bf00      	nop
- 8001880:	20014168 	.word	0x20014168
+ 8001880:	20005168 	.word	0x20005168
 
 08001884 <__NVIC_SetPriorityGrouping>:
            In case of a conflict between priority grouping and available
