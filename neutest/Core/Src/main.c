@@ -62,7 +62,11 @@ static void MX_I2S2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint16_t txBuf[8], rxBuf[8];
+uint16_t rxBuf[16384];
+uint16_t txBuf[16384];
+float fftInBuf[2048];
+float fftOutBuf[2048];
+
 /* USER CODE END 0 */
 
 /**
