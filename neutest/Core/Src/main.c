@@ -287,23 +287,58 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+float complexABS(float real, float compl)
+{
+	return sqrt(real*real+compl*compl);
+}
+
+void doFFT()
+{
+	arm_rfft_fast_f32(&fftHandler, &fftInBuf, &fftOutBuf, 0);
+
+	int freqs[1024];
+	int freqPoint = 0;
+	int offset = 150; // variable noisefloor
+
+	int i = 0;
+	for (i = 0; i< 2048; i++)
+	{
+		freqs[freqPoint] = (int)(28*log10f(complexABS(fftOutBuf[i], fftOutBuf[i+1]))) - offset;
+		if (freqs[freqPoint] < 0)
+		{
+			freqs[freqPoint] = 0;
+		}
+		freqPoint++;
+	}
+
+	uartFree = 0;
+	callbackState = 0;
+}
+
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s1)
 {
+	  /*
 	  int left=(rxBuf[0]<<16 | rxBuf[1]);
 	  int right=(rxBuf[2]<<16 | rxBuf[3]);
 	  txBuf[0]=(left>>16)&0xFFFF;
 	  txBuf[1]=left&0xFFFF;
 	  txBuf[2]=(right>>16)&0xFFFF;
 	  txBuf[3]=right&0xFFFF;
+	  */
+	callbackState = 1;
 }
+
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s1)
 {
+		/*
 	  int left=(rxBuf[4]<<16 | rxBuf[5]);
 	  int right=(rxBuf[6]<<16 | rxBuf[7]);
 	  txBuf[4]=(left>>16)&0xFFFF;
 	  txBuf[5]=left&0xFFFF;
 	  txBuf[6]=(right>>16)&0xFFFF;
 	  txBuf[7]=right&0xFFFF;
+	  */
+	callbackState = 2;
 }
 /* USER CODE END 4 */
 
