@@ -41,8 +41,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-I2S_HandleTypeDef hi2s1;
-DMA_HandleTypeDef hdma_spi1_rx;
+UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
@@ -51,18 +50,17 @@ DMA_HandleTypeDef hdma_spi1_rx;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_DMA_Init(void);
-static void MX_I2S1_Init(void);
+static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint16_t rxBuf[4096];
-uint16_t txBuf[4096];
-float fftInBuf[512];
-float fftOutBuf[512];
+uint16_t rxBuf[16384] = {500};
+uint16_t txBuf[16384];
+float fftInBuf[2048] = {500};
+float fftOutBuf[2048];
 
 arm_rfft_fast_instance_f32 fftHandler;
 
@@ -70,6 +68,34 @@ float realSample = 48828;
 uint8_t callbackState = 0;
 uint8_t outBuf[14];
 uint8_t uartFree = 1;
+
+float complexABS(float real, float compl)
+{
+	return sqrt(real*real+compl*compl);
+}
+
+void doFFT()
+{
+	arm_rfft_fast_f32(&fftHandler, fftInBuf, fftOutBuf, 0);
+
+	int freqs[512];
+	int freqPoint = 0;
+	int offset = 150; // variable noisefloor
+
+	int i = 0;
+	for (i = 0; i< 1024; i += 2)
+	{
+		freqs[freqPoint] = (int)(28*log10f(complexABS(fftOutBuf[i], fftOutBuf[i+1]))) - offset;
+		if (freqs[freqPoint] < 0)
+		{
+			freqs[freqPoint] = 0;
+		}
+		freqPoint++;
+	}
+
+	uartFree = 0;
+	callbackState = 0;
+}
 /* USER CODE END 0 */
 
 /**
@@ -79,7 +105,10 @@ uint8_t uartFree = 1;
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+	  /* FPU settings ------------------------------------------------------------*/
+	  //#if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
+	  //  SCB->CPACR |= ((3UL << 10*2)|(3UL << 11*2));  /* set CP10 and CP11 Full Access */
+	  //#endif
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -100,13 +129,12 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_I2S1_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   //HAL_I2S_Transmit_DMA(&hi2s2, txBuf, 16384);
-  HAL_I2S_Receive_DMA(&hi2s1, rxBuf, 4096);
+  //HAL_I2S_Receive_DMA(&hi2s1, rxBuf, 1024);
 
-  arm_rfft_fast_init_f32(&fftHandler, 1024);
+  arm_rfft_fast_init_f32(&fftHandler, 2048);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -116,8 +144,9 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
 	  	  int fftInPtr = 0;
-	  	  if (callbackState == 1)
+/*)
 	  	  {
 	  		  int i = 0;
 	  		  for (i = 0; i < 8192; i += 4)
@@ -146,8 +175,27 @@ int main(void)
 				  fftInPtr++;
 	  		  }
 	  	  }
+	  	  */
 
-	  	  doFFT();
+	  	arm_rfft_fast_f32(&fftHandler, &fftInBuf[0], &fftOutBuf[0], 0);
+
+	  		int freqs[512];
+	  		int freqPoint = 0;
+	  		int offset = 150; // variable noisefloor
+
+	  		int i = 0;
+	  		for (i = 0; i< 1024; i += 2)
+	  		{
+	  			freqs[freqPoint] = (int)(28*log10f(complexABS(fftOutBuf[i], fftOutBuf[i+1]))) - offset;
+	  			if (freqs[freqPoint] < 0)
+	  			{
+	  				freqs[freqPoint] = 0;
+	  			}
+	  			freqPoint++;
+	  		}
+
+	  		uartFree = 0;
+	  		callbackState = 0;
   }
   /* USER CODE END 3 */
 }
@@ -160,7 +208,6 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-  RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
   /** Configure the main internal regulator output voltage
   */
@@ -196,67 +243,38 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2S_APB2;
-  PeriphClkInitStruct.PLLI2S.PLLI2SN = 50;
-  PeriphClkInitStruct.PLLI2S.PLLI2SP = RCC_PLLI2SP_DIV2;
-  PeriphClkInitStruct.PLLI2S.PLLI2SM = 8;
-  PeriphClkInitStruct.PLLI2S.PLLI2SR = 2;
-  PeriphClkInitStruct.PLLI2S.PLLI2SQ = 2;
-  PeriphClkInitStruct.PLLI2SDivQ = 1;
-  PeriphClkInitStruct.I2sApb2ClockSelection = RCC_I2SAPB2CLKSOURCE_PLLI2S;
-  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
 }
 
 /**
-  * @brief I2S1 Initialization Function
+  * @brief USART2 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_I2S1_Init(void)
+static void MX_USART2_UART_Init(void)
 {
 
-  /* USER CODE BEGIN I2S1_Init 0 */
+  /* USER CODE BEGIN USART2_Init 0 */
 
-  /* USER CODE END I2S1_Init 0 */
+  /* USER CODE END USART2_Init 0 */
 
-  /* USER CODE BEGIN I2S1_Init 1 */
+  /* USER CODE BEGIN USART2_Init 1 */
 
-  /* USER CODE END I2S1_Init 1 */
-  hi2s1.Instance = SPI1;
-  hi2s1.Init.Mode = I2S_MODE_MASTER_RX;
-  hi2s1.Init.Standard = I2S_STANDARD_PHILIPS;
-  hi2s1.Init.DataFormat = I2S_DATAFORMAT_24B;
-  hi2s1.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
-  hi2s1.Init.AudioFreq = I2S_AUDIOFREQ_48K;
-  hi2s1.Init.CPOL = I2S_CPOL_LOW;
-  hi2s1.Init.ClockSource = I2S_CLOCK_PLL;
-  hi2s1.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_DISABLE;
-  if (HAL_I2S_Init(&hi2s1) != HAL_OK)
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN I2S1_Init 2 */
+  /* USER CODE BEGIN USART2_Init 2 */
 
-  /* USER CODE END I2S1_Init 2 */
-
-}
-
-/**
-  * Enable DMA controller clock
-  */
-static void MX_DMA_Init(void)
-{
-
-  /* DMA controller clock enable */
-  __HAL_RCC_DMA2_CLK_ENABLE();
-
-  /* DMA interrupt init */
-  /* DMA2_Stream0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+  /* USER CODE END USART2_Init 2 */
 
 }
 
@@ -270,64 +288,39 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
 
 }
 
 /* USER CODE BEGIN 4 */
-float complexABS(float real, float compl)
-{
-	return sqrt(real*real+compl*compl);
-}
 
-void doFFT()
-{
-	arm_rfft_fast_f32(&fftHandler, &fftInBuf, &fftOutBuf, 0);
+/*
+//void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s1)
+//{
+//	  /*
+//	  int left=(rxBuf[0]<<16 | rxBuf[1]);
+//	  int right=(rxBuf[2]<<16 | rxBuf[3]);
+//	  txBuf[0]=(left>>16)&0xFFFF;
+//	  txBuf[1]=left&0xFFFF;
+//	  txBuf[2]=(right>>16)&0xFFFF;
+//	  txBuf[3]=right&0xFFFF;
+//	  */
+//	callbackState = 1;
+//}
 
-	int freqs[1024];
-	int freqPoint = 0;
-	int offset = 150; // variable noisefloor
 
-	int i = 0;
-	for (i = 0; i< 2048; i += 2)
-	{
-		freqs[freqPoint] = (int)(28*log10f(complexABS(fftOutBuf[i], fftOutBuf[i+1]))) - offset;
-		if (freqs[freqPoint] < 0)
-		{
-			freqs[freqPoint] = 0;
-		}
-		freqPoint++;
-	}
+//void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s1)
+//{
+//		/*
+//	  int left=(rxBuf[4]<<16 | rxBuf[5]);
+//	  int right=(rxBuf[6]<<16 | rxBuf[7]);
+//	  txBuf[4]=(left>>16)&0xFFFF;
+//	  txBuf[5]=left&0xFFFF;
+//	  txBuf[6]=(right>>16)&0xFFFF;
+//	  txBuf[7]=right&0xFFFF;
+//	  */
+//	callbackState = 2;
+//}
 
-	uartFree = 0;
-	callbackState = 0;
-}
-
-void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s1)
-{
-	  /*
-	  int left=(rxBuf[0]<<16 | rxBuf[1]);
-	  int right=(rxBuf[2]<<16 | rxBuf[3]);
-	  txBuf[0]=(left>>16)&0xFFFF;
-	  txBuf[1]=left&0xFFFF;
-	  txBuf[2]=(right>>16)&0xFFFF;
-	  txBuf[3]=right&0xFFFF;
-	  */
-	callbackState = 1;
-}
-
-void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s1)
-{
-		/*
-	  int left=(rxBuf[4]<<16 | rxBuf[5]);
-	  int right=(rxBuf[6]<<16 | rxBuf[7]);
-	  txBuf[4]=(left>>16)&0xFFFF;
-	  txBuf[5]=left&0xFFFF;
-	  txBuf[6]=(right>>16)&0xFFFF;
-	  txBuf[7]=right&0xFFFF;
-	  */
-	callbackState = 2;
-}
 /* USER CODE END 4 */
 
 /**
