@@ -120,6 +120,38 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  	  int fftInPtr = 0;
+	  	  if (callbackState == 1)
+	  	  {
+	  		  int i = 0;
+	  		  for (i = 0; i < 8192; i += 4)
+	  		  {
+	  			  fftInBuf[fftInPtr] = (float) ((int) (rxBuf[i] << 16)|(rxBuf[i+1]));
+	  			  fftInBuf[fftInPtr] += (float) ((int) (rxBuf[i+2] << 16)|(rxBuf[i+3]));
+				  txBuf[i] = rxBuf[i];
+				  txBuf[i+1] = rxBuf[i+1];
+				  txBuf[i+2] = rxBuf[i+2];
+				  txBuf[i+3] = rxBuf[i+3];
+				  fftInPtr++;
+	  		  }
+	  	  }
+
+	  	  if (callbackState == 2)
+	  	  {
+	  		  int i = 8192;
+	  		  for (i = 8192; i < 16384; i += 4)
+	  		  {
+	  			  fftInBuf[fftInPtr] = (float) ((int) (rxBuf[i] << 16)|(rxBuf[i+1]));
+	  			  fftInBuf[fftInPtr] = (float) ((int) (rxBuf[i+2] << 16)|(rxBuf[i+3]));
+				  txBuf[i] = rxBuf[i];
+				  txBuf[i+1] = rxBuf[i+1];
+				  txBuf[i+2] = rxBuf[i+2];
+				  txBuf[i+3] = rxBuf[i+3];
+				  fftInPtr++;
+	  		  }
+	  	  }
+
+	  	  doFFT();
   }
   /* USER CODE END 3 */
 }
@@ -301,7 +333,7 @@ void doFFT()
 	int offset = 150; // variable noisefloor
 
 	int i = 0;
-	for (i = 0; i< 2048; i++)
+	for (i = 0; i< 2048; i += 2)
 	{
 		freqs[freqPoint] = (int)(28*log10f(complexABS(fftOutBuf[i], fftOutBuf[i+1]))) - offset;
 		if (freqs[freqPoint] < 0)
