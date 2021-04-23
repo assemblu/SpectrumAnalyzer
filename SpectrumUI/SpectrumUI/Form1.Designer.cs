@@ -40,6 +40,7 @@ namespace SpectrumUI
             this.resizeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.plotWindow = new ScottPlot.FormsPlot();
+            this.serialPort1 = new System.IO.Ports.SerialPort(this.components);
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -69,13 +70,13 @@ namespace SpectrumUI
             // portToolStripMenuItem
             // 
             this.portToolStripMenuItem.Name = "portToolStripMenuItem";
-            this.portToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.portToolStripMenuItem.Size = new System.Drawing.Size(120, 26);
             this.portToolStripMenuItem.Text = "Port";
             // 
             // quitToolStripMenuItem
             // 
             this.quitToolStripMenuItem.Name = "quitToolStripMenuItem";
-            this.quitToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.quitToolStripMenuItem.Size = new System.Drawing.Size(120, 26);
             this.quitToolStripMenuItem.Text = "Quit";
             this.quitToolStripMenuItem.Click += new System.EventHandler(this.quitToolStripMenuItem_Click);
             // 
@@ -104,7 +105,7 @@ namespace SpectrumUI
             // resizeToolStripMenuItem
             // 
             this.resizeToolStripMenuItem.Name = "resizeToolStripMenuItem";
-            this.resizeToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.resizeToolStripMenuItem.Size = new System.Drawing.Size(163, 26);
             this.resizeToolStripMenuItem.Text = "Resize...";
             this.resizeToolStripMenuItem.Click += new System.EventHandler(this.resizeToolStripMenuItem_Click);
             // 
@@ -122,10 +123,14 @@ namespace SpectrumUI
             | System.Windows.Forms.AnchorStyles.Right)));
             this.plotWindow.AutoSize = true;
             this.plotWindow.Location = new System.Drawing.Point(0, 108);
-            this.plotWindow.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.plotWindow.Margin = new System.Windows.Forms.Padding(5);
             this.plotWindow.Name = "plotWindow";
             this.plotWindow.Size = new System.Drawing.Size(1067, 444);
             this.plotWindow.TabIndex = 1;
+            // 
+            // serialPort1
+            // 
+            this.serialPort1.DataReceived += new System.IO.Ports.SerialDataReceivedEventHandler(this.serialPort1_DataReceived);
             // 
             // Form1
             // 
@@ -135,7 +140,7 @@ namespace SpectrumUI
             this.Controls.Add(this.plotWindow);
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "Form1";
             this.Text = "Spectrum analyzer";
             this.Load += new System.EventHandler(this.Form1_Load);
@@ -158,6 +163,7 @@ namespace SpectrumUI
         private ScottPlot.FormsPlot plotWindow;
         private System.Windows.Forms.ToolStripMenuItem savePlotToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem resizeToolStripMenuItem;
+        private System.IO.Ports.SerialPort serialPort1;
     }
 }
 

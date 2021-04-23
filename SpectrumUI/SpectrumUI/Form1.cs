@@ -15,6 +15,8 @@ namespace SpectrumUI
     {
 
         string selectedPort;
+        double[] freq = new double[10];
+        double[] dataPoints = new double[10];
         public Form1()
         {
             InitializeComponent();
@@ -33,7 +35,15 @@ For source code visit github.com/<whatever>
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            // Add serial ports to drop down menu
             updatePortItems();
+            // Setup serial port
+            serialPort1.BaudRate = 115200;
+            serialPort1.Parity = Parity.None;
+            serialPort1.DataBits = 8;
+            serialPort1.StopBits = StopBits.One;
+            serialPort1.Handshake = Handshake.None;
+
             double[] xs = { 31.5, 63, 100, 200, 500, 1000, 2500, 5000, 10000, 15100 };
             double[] ys = { 40,40,100,100,150,255,150,100,40,40 };
             var p=plotWindow.plt.PlotBar(xs,ys);
@@ -45,12 +55,26 @@ For source code visit github.com/<whatever>
     
         void updatePortItems()
         {
+            // Add available COM ports to drop down list
             portToolStripMenuItem.DropDown.Items.Clear();
             foreach ( string ports in SerialPort.GetPortNames())
             {
                 var port = portToolStripMenuItem.DropDown.Items.Add(ports);
                 port.Click += ComSelection;
             }
+        }
+
+        private void updatePlot()
+        {
+            //for (int i=0; i<10;i++)
+            //{
+            //    MessageBox.Show("Data point value: " + dataPoints[i].ToString() + " at " + freq[i] + "Hz");
+            //}
+            plotWindow.Reset();
+            var p = plotWindow.plt.PlotBar(freq, dataPoints);
+            p.barWidth = 10;
+            p.showValues = true;
+            plotWindow.Render();
         }
 
         private void quitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -60,6 +84,7 @@ For source code visit github.com/<whatever>
 
         private void savePlotToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            // Saves plot to file
             SaveFileDialog s = new SaveFileDialog();
             s.Filter = "PNG image file | *.png";
             s.AddExtension = true;
@@ -67,27 +92,68 @@ For source code visit github.com/<whatever>
             if (s.ShowDialog() == DialogResult.OK)
             {
                 MessageBox.Show(s.FileName);
-                int[] dim = { plotWindow.Size.Width, plotWindow.Size.Height };
-                plotWindow.plt.Resize(4000, 1000);
-                plotWindow.plt.SaveFig(s.FileName);
-                plotWindow.plt.Resize(dim[0], dim[1]);
+                int[] dim = { plotWindow.Size.Width, plotWindow.Size.Height }; // Save original dimensions
+                plotWindow.plt.Resize(4000, 1000); // Resize to output settings
+                plotWindow.plt.SaveFig(s.FileName); // Save plot
+                plotWindow.plt.Resize(dim[0], dim[1]); // Resize back to original size
             }
         }
-
         private void ComSelection(object sender, EventArgs e)
         {
+            // This function runs whenever a COM port was selected from the menu
             ToolStripMenuItem selected = (ToolStripMenuItem)sender;
             selected.Checked = true;
             selectedPort = selected.Text;
+            if (serialPort1.IsOpen) serialPort1.Close();
+            serialPort1.PortName = selectedPort;
+            serialPort1.Open();
         }
         private void resizeToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            // Open new resize dialog
             SettingsDialog s = new SettingsDialog("Resize");
             s.ShowDialog();
             if( s.DialogResult==DialogResult.OK)
             {
                 this.Size = new Size(s.newWidth , s.newHeight);
 
+            }
+        }
+
+        private void serialPort1_DataReceived(object sender, SerialDataReceivedEventArgs e)
+        {
+            // Data event
+            int length = serialPort1.BytesToRead;
+            if (length == 15 || length == 25) // Valid transmission if l = 14
+            {
+                int[] data = new int[length];
+                for (int i = 0; i < length; i++)
+                {
+                    data[i] = serialPort1.ReadByte();
+                }
+                if (data[0] == 0xFF && data[1] == 0x02 && data[length-2] == 0xFF && data[length-1] == 0x04) // If start and end is valid
+                { 
+                    if(data[2]==0x11) // Data is a range
+                    {
+                        int j = 0;
+                        for (int i = 3; i < length - 2; i+=2)
+                        {
+                            int value16 = data[i]*16*16 + data[i + 1];
+                            freq[j] = (24000 / 2048) * value16;
+                            j++;
+                        }
+                    }
+                    if(data[2]==0x12) // Data are analyzer values
+                    {
+                        int j = 0;
+                        for (int i = 3; i < length-2; i++) // read values
+                        {
+                            dataPoints[j] = data[i];
+                            j++;
+                        }
+                        updatePlot();
+                    }
+                }
             }
         }
     }
