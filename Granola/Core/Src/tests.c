@@ -7,15 +7,15 @@
 
 #include "tests.h"
 
-enum granola_status ADC_check(void)
+uint8_t ADC_check(ADC_HandleTypeDef *adc)
 {
-	enum granola_status status = GR_ERR;
+	uint8_t status = 1;
 	uint16_t adc_value = 0;
-	adc_value = HAL_ADC_GetValue(&hadc1);
+	adc_value = HAL_ADC_GetValue(adc);
 
-	HAL_Delay(100);
+	//HAL_Delay(5);
 	uint16_t previous_adc_value = adc_value;
-	adc_value = HAL_ADC_GetValue(&hadc1);
+	adc_value = HAL_ADC_GetValue(adc);
 
 	if (adc_value > previous_adc_value)
 	{
@@ -27,7 +27,14 @@ enum granola_status ADC_check(void)
 		adc_value = previous_adc_value;
 	}
 
-	(adc_value > 500) ? status = GR_ERR : status = GR_OK;
+	if (adc_value > 500)
+	{
+		status = 1;
+	}
+	else
+	{
+		status = 0;
+	}
 
 	return status;
 }

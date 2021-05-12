@@ -12,22 +12,12 @@
 #include "main.h"
 
 /*
- * @brief status codes for tests
- */
-enum granola_status {
-	GR_OK = 0,
-	GR_ERR,
-	GR_WAR,
-	GR_BUSY
-};
-
-/*
  * @brief Check if ADC can retrieve value
  *
  * ----- The tests performed assume ADC0
  * is connected and receives values from
  * 0 to 4096
  */
-enum granola_status ADC_check(void);
+uint8_t ADC_check(ADC_HandleTypeDef *adc);
 
 #endif /* INC_TESTS_H_ */

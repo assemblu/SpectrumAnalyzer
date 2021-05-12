@@ -56,7 +56,7 @@ static void MX_ADC1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+uint16_t adc = 0;
 /* USER CODE END 0 */
 
 /**
@@ -94,12 +94,14 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  ADC_check();
+	  adc = HAL_ADC_GetValue(&hadc1);
   }
   /* USER CODE END 3 */
 }
