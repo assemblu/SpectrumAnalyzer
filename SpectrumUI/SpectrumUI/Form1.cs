@@ -15,6 +15,7 @@ namespace SpectrumUI
     {
 
         string selectedPort;
+        int ticks = 0;
         double[] freq = new double[10];
         double[] dataPoints = new double[10];
         public Form1()
@@ -50,7 +51,7 @@ For source code visit github.com/<whatever>
             p.barWidth = 10;
             p.showValues = true;
             plotWindow.Render();
-
+            timer1.Stop();
         }
     
         void updatePortItems()
@@ -66,10 +67,10 @@ For source code visit github.com/<whatever>
 
         private void updatePlot()
         {
-            //for (int i=0; i<10;i++)
-            //{
-            //    MessageBox.Show("Data point value: " + dataPoints[i].ToString() + " at " + freq[i] + "Hz");
-            //}
+            for (int i = 0; i < 10; i++)
+            {
+                //MessageBox.Show("Data point value: " + dataPoints[i].ToString() + " at " + freq[i] + "Hz");
+            }
             plotWindow.Reset();
             var p = plotWindow.plt.PlotBar(freq, dataPoints);
             p.barWidth = 10;
@@ -107,6 +108,18 @@ For source code visit github.com/<whatever>
             if (serialPort1.IsOpen) serialPort1.Close();
             serialPort1.PortName = selectedPort;
             serialPort1.Open();
+            serialPort1.DiscardInBuffer();
+            timer1.Start();
+        }
+        private void reOpenComPort()
+        {
+            if(serialPort1.IsOpen)
+            {
+                serialPort1.Close();
+                serialPort1.Open();
+                serialPort1.DiscardInBuffer();
+                timer1.Start();
+            }
         }
         private void resizeToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -122,38 +135,64 @@ For source code visit github.com/<whatever>
 
         private void serialPort1_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
+            
             // Data event
             int length = serialPort1.BytesToRead;
-            if (length == 15 || length == 25) // Valid transmission if l = 14
+
+
+
+            if (length == 15 || length == 25)
             {
-                int[] data = new int[length];
-                for (int i = 0; i < length; i++)
+                ticks = 0;
+                byte[] data = new byte[length];
+                //for (int i = 0; i < length; i++)
+                //{
+                //    data[i] = serialport1.readbyte();
+                //}
+                serialPort1.Read(data, 0, length);
+                if (data[0] == 0xFF && data[1] == 0x02 && data[length - 2] == 0xFF && data[length - 1] == 0x04) // If start and end is valid
                 {
-                    data[i] = serialPort1.ReadByte();
-                }
-                if (data[0] == 0xFF && data[1] == 0x02 && data[length-2] == 0xFF && data[length-1] == 0x04) // If start and end is valid
-                { 
-                    if(data[2]==0x11) // Data is a range
+                    if (data[2] == 0x11) // Data is a range
                     {
                         int j = 0;
-                        for (int i = 3; i < length - 2; i+=2)
+                        for (int i = 3; i < length - 2; i += 2)
                         {
-                            int value16 = data[i]*16*16 + data[i + 1];
+                            int value16 = data[i] * 16 * 16 + data[i + 1];
+                            
                             freq[j] = (24000 / 2048) * value16;
                             j++;
                         }
+                        label1.BeginInvoke((MethodInvoker)delegate () { label1.Text = "Range updated!"; });
                     }
-                    if(data[2]==0x12) // Data are analyzer values
+                    if (data[2] == 0x12) // Data are analyzer values
                     {
                         int j = 0;
-                        for (int i = 3; i < length-2; i++) // read values
+                        for (int i = 3; i < length - 2; i++) // read values
                         {
                             dataPoints[j] = data[i];
                             j++;
                         }
                         updatePlot();
+                        label1.BeginInvoke((MethodInvoker)delegate () { label1.Text = "Data updated!"; });
                     }
                 }
+            }
+            else
+            {
+                
+            }
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            // tick interval 100 ms
+            ticks += 1;
+            if(ticks>50)
+            {
+                timer1.Stop();
+                // If no update happenend for 5 sec, reset com port
+                reOpenComPort();
+                ticks = 0;
             }
         }
     }
