@@ -108,7 +108,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  HAL_GPIO_TogglePin(STATUS_LED_GPIO_Port, STATUS_LED_Pin);
 	  adc = HAL_ADC_GetValue(&hadc1);
-	  HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, adc);
+
   }
   /* USER CODE END 3 */
 }
