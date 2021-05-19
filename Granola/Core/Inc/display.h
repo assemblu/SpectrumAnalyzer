@@ -6,6 +6,7 @@
 #ifndef __DISPLAY_H__
 #define __DISPLAY_H__
 
+#include "fonts.h"
 #include <stdbool.h>
 
 #define ILI9341_MADCTL_MY  0x80
