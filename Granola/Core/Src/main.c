@@ -105,6 +105,20 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
+  // Check border
+      ILI9341_FillScreen(ILI9341_WHITE);
+
+      for(int x = 0; x < ILI9341_WIDTH; x++) {
+          ILI9341_DrawPixel(x, 0, ILI9341_RED);
+          ILI9341_DrawPixel(x, ILI9341_HEIGHT-1, ILI9341_RED);
+      }
+
+      for(int y = 0; y < ILI9341_HEIGHT; y++) {
+          ILI9341_DrawPixel(0, y, ILI9341_RED);
+          ILI9341_DrawPixel(ILI9341_WIDTH-1, y, ILI9341_RED);
+      }
+
+
 
   while (1)
   {
