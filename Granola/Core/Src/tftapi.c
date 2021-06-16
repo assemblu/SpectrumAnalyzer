@@ -35,8 +35,18 @@ void drawOutline(void)
 void setRange(uint32_t* range, uint32_t* size)
 {
 	uint32_t index = 0;
+	uint8_t drawingBaseOffset = 20;
+	uint8_t drawingOffset = 40;
+
+	// print first element
+	//LCD_SetCursor(drawingBaseOffset, 225);
+	//LCD_Printf("0");
+	//(range[0] < 1000) ? (LCD_Printf("500Hz")) : (LCD_Printf("1khz"));
 	for (index = 0; index < size; index++)
 	{
+		LCD_SetCursor(drawingBaseOffset + drawingOffset * index, 225);
+		LCD_Printf("%.1f", (float)range[index]/1000);
+
 		// do something
 	}
 }

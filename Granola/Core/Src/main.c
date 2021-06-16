@@ -19,16 +19,19 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
+#define sampleSize 24
+#define FFT_SIZE 1024
+#define ARM_MATH_CM4
+#include "arm_math.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "tftapi.h"
 #include "lcd.h"
 /* USER CODE END Includes */
 
-/* Private typedef -----------------------------------------------------------*/
+/* Private typedef ----------------*-------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+int Value_devider_for_screen (uint16_t dataValue);
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -42,7 +45,10 @@
 
 /* Private variables ---------------------------------------------------------*/
 SPI_HandleTypeDef hspi1;
-
+ADC_HandleTypeDef hadc1;
+DMA_HandleTypeDef hdma_adc1;
+TIM_HandleTypeDef htim2;
+UART_HandleTypeDef huart2;
 TIM_HandleTypeDef htim1;
 
 /* USER CODE BEGIN PV */
@@ -54,13 +60,32 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM1_Init(void);
+static void MX_ADC1_Init(void);
+static void MX_TIM2_Init(void);
+static void MX_DMA_Init(void);
+static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+uint32_t sample;
+uint16_t rxBuf[sampleSize];
+uint8_t fftBufferFull=0;
+uint8_t serialBuf[12];
+uint8_t sendShit=0;
+uint8_t resultMeanCounter=0;
+uint32_t resultMean[10];
+uint16_t fftBufferCounter=0;
+uint8_t buf[517];
+int inPtr=0,maxIndex;
+float maxValue;
+float fftBuffer[FFT_SIZE*2];
+float fftResult[FFT_SIZE*2];
+float spec[FFT_SIZE/2];
+arm_rfft_fast_instance_f32 fft_handler;
+//arm_cfft_instance_f32 fft_handler;
 /* USER CODE END 0 */
 
 /**
@@ -92,8 +117,15 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_SPI1_Init();
+  MX_DMA_Init();
+  MX_ADC1_Init();
   MX_TIM1_Init();
+  MX_TIM2_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  HAL_ADC_Start_DMA(&hadc1,&rxBuf,sampleSize);
+  HAL_TIM_OC_Start(&htim2, TIM_CHANNEL_2);
+  arm_rfft_fast_init_f32(&fft_handler, FFT_SIZE);
 
   	LCD_Init();
   	LCD_FillScreen(WHITE);
@@ -115,17 +147,57 @@ int main(void)
       /* USER CODE END WHILE */
 
       /* USER CODE BEGIN 3 */
+    	if(fftBufferFull==1)
+		  {
+			  DoFFT();
+			  HAL_UART_Receive_IT(&huart2, serialBuf, 1);
+		  }
     	drawOutline();
     	int drawingBaseOffsetApi = 20;
     	int drawingIncrementOffsetApi = 40;
     	LCD_SetCursor(drawingBaseOffsetApi, 225);
   		LCD_Printf("0Hz");
-  		LCD_SetCursor(drawingBaseOffsetApi + drawingIncrementOffsetApi*1, 225);
-  		LCD_Printf("100Hz");
-  		LCD_SetCursor(drawingBaseOffsetApi + drawingIncrementOffsetApi*2, 225);
-  		LCD_Printf("1kHz");
-  		LCD_SetCursor(drawingBaseOffsetApi + drawingIncrementOffsetApi*3, 225);
-  		LCD_Printf("5kHz");
+  		//LCD_SetCursor(drawingBaseOffsetApi + drawingIncrementOffsetApi*1, 225);
+  		//LCD_Printf("100Hz");
+  		//LCD_SetCursor(drawingBaseOffsetApi + drawingIncrementOffsetApi*2, 225);
+  		//LCD_Printf("1kHz");
+  		//LCD_SetCursor(drawingBaseOffsetApi + drawingIncrementOffsetApi*3, 225);
+  		//LCD_Printf("5kHz");
+  		LCD_SetCursor(80, 225);
+  		LCD_Printf("5K");
+  		LCD_SetCursor(150, 225);
+  		LCD_Printf("10K");
+  		LCD_SetCursor(220, 225);
+  		LCD_Printf("15K");
+  		LCD_SetCursor(290, 225);
+  		LCD_Printf("20K");
+
+  		uint16_t x = 0 ;
+  		uint8_t y [55] = { 0 };
+  		uint16_t z = 3;
+  		uint16_t value = 0;
+  		uint8_t i = 0;
+  		for (i = 0; i <= 56; i++ )
+  		{
+  			for (z = z; z <= (((1+i)*9)+2); z++)
+  			{
+  				value = value + buf[z];
+  			}
+  			//z++;
+  			value = value / 9;
+  			y[i] =  Value_devider_for_screen(value);
+  			value = 0;
+  		}
+  		z = 3;
+
+  		while ( x != 280)
+  		{
+
+  			LCD_DrawLine((25 + x), (20 + (200 - y[z])), (25 + x), 220, BLACK);
+
+  			x = x + 5;
+  			z++;
+  		}
     }
     /* USER CODE END 3 */
 }
@@ -142,7 +214,7 @@ void SystemClock_Config(void)
   /** Configure the main internal regulator output voltage
   */
   __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE2);
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
@@ -152,7 +224,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
   RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 180;
+  RCC_OscInitStruct.PLL.PLLN = 140;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 2;
   RCC_OscInitStruct.PLL.PLLR = 2;
@@ -173,9 +245,9 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV8;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
   {
     Error_Handler();
   }
@@ -218,7 +290,146 @@ static void MX_SPI1_Init(void)
   /* USER CODE END SPI1_Init 2 */
 
 }
+static void MX_ADC1_Init(void)
+{
 
+  /* USER CODE BEGIN ADC1_Init 0 */
+
+  /* USER CODE END ADC1_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC1_Init 1 */
+
+  /* USER CODE END ADC1_Init 1 */
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+  */
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
+  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc1.Init.ScanConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
+  hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T2_CC2;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.DMAContinuousRequests = ENABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_13;
+  sConfig.Rank = 1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC1_Init 2 */
+
+  /* USER CODE END ADC1_Init 2 */
+
+}
+static void MX_USART2_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART2_Init 0 */
+
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
+
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
+
+  /* USER CODE END USART2_Init 2 */
+
+}
+
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+
+}
+
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 180-1;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 20-1;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_OC_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_TOGGLE;
+  sConfigOC.Pulse = 6-1;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_OC_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
+  HAL_TIM_MspPostInit(&htim2);
+
+}
 /**
   * @brief TIM1 Initialization Function
   * @param None
@@ -283,7 +494,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1|GPIO_PIN_7, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_4|GPIO_PIN_8
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_8
                           |GPIO_PIN_9|GPIO_PIN_10, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -297,9 +508,17 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA0 PA1 PA4 PA8
+  /*Configure GPIO pins : PA3 */
+
+    GPIO_InitStruct.Pin = GPIO_PIN_3;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PA0 PA1 PA2 PA4 PA8
                            PA9 PA10 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_4|GPIO_PIN_8
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_4|GPIO_PIN_8
                           |GPIO_PIN_9|GPIO_PIN_10;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -318,6 +537,107 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_ADC_ConvHalfCpltCallback  (ADC_HandleTypeDef *hadc1)
+{
+	  for (int i=0;i<sampleSize;i++)
+	  {
+		  sample+=rxBuf[i];
+	  }
+	  sample=sample/sampleSize;
+
+	  if(fftBufferCounter<FFT_SIZE)
+	  {
+		  fftBuffer[fftBufferCounter]=(float)( (int) (2048-sample) );
+		  fftBufferCounter++;
+	  }
+	  else
+	  {
+		  fftBufferFull=1;
+	  }
+	  sample=0;
+}
+void HAL_ADC_ConvCpltCallback  (ADC_HandleTypeDef *hadc1)
+{
+	  for (int i=0;i<sampleSize;i++)
+	  {
+		  sample+=rxBuf[i];
+	  }
+	  sample=sample/sampleSize;
+
+	  if(fftBufferCounter<FFT_SIZE)
+	  {
+		  fftBuffer[fftBufferCounter]=(float)( (int) (2048-sample) );
+		  fftBufferCounter++;
+	  }
+	  else
+	  {
+		  fftBufferFull=1;
+	  }
+	  sample=0;
+}
+
+int map(int x, int in_min, int in_max, int out_min, int out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+void DoFFT()
+{
+	//Do FFT
+
+	arm_rfft_fast_f32(&fft_handler, fftBuffer, fftResult, 0);
+	//arm_cfft_f32(&fft_handler, fftBuffer, 0, 0);
+	arm_cmplx_mag_f32(fftResult,spec,FFT_SIZE);
+	arm_max_f32(spec,FFT_SIZE,&maxValue,&maxIndex);
+	uint8_t meanIterations=5;
+	//uint8_t buf[517];
+	buf[0]=0xFF;
+	buf[1]=0x02;
+	buf[2]=0x12;
+	buf[3]=0x00;
+	int j=3;
+	if(sendShit){
+		for(int i=1; i<512; i++)
+		{
+			buf[j]=(uint8_t)map((int)spec[i],0,maxValue,0,255 );
+			j++;
+		}
+		buf[515]=0xFF;
+		buf[516]=0x04;
+		sendDataPC(buf, sizeof(buf) );
+		//sendUpdateCommand();
+		sendShit=0;
+	}
+	fftBufferFull=0;
+	fftBufferCounter=0;
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart2)
+{
+	sendShit=1;
+}
+
+void sendDataPC(uint8_t dataValues[], int size)
+{
+    HAL_UART_Transmit(&huart2,dataValues,size,HAL_MAX_DELAY);
+}
+
+int Value_devider_for_screen (uint16_t dataValue)
+{
+	double deviding = 1.28;
+	double value = (double)dataValue;
+	int H = 1;
+	int counter = 0;
+	while (H == 1)
+	{
+		value = value - deviding;
+		counter++;
+		if (value <= deviding)
+		{
+			H = 0;
+		}
+	}
+	return counter;
+}
+
 
 /* USER CODE END 4 */
 
