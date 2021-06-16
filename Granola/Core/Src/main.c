@@ -394,7 +394,6 @@ static void MX_TIM2_Init(void)
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 20-1;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
@@ -639,6 +638,15 @@ int Value_devider_for_screen (uint16_t dataValue)
 }
 
 
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart2)
+{
+	sendShit=1;
+}
+
+void sendDataPC(uint8_t dataValues[], int size)
+{
+    HAL_UART_Transmit(&huart2,dataValues,size,HAL_MAX_DELAY);
+}
 /* USER CODE END 4 */
 
 /**
