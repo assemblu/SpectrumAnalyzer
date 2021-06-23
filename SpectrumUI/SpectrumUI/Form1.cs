@@ -14,11 +14,13 @@ namespace SpectrumUI
 {
     public partial class Form1 : Form
     {
+        static int dataLength = 1668; // The last value in the received data that is actually useful
+        static int totalLength = 2048; // The length of the fft result
 
         string selectedPort;
         int ticks = 0;
-        double[] freq = new double[512];
-        double[] dataPoints = new double[512];
+        double[] freq = new double[dataLength];
+        double[] dataPoints = new double[dataLength];
         ScottPlot.PlottableBar pSignal;
         int j = 0;
         public Form1()
@@ -28,8 +30,8 @@ namespace SpectrumUI
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            
-            string abtMsg = @"For source code visit github.com/<whatever>
+
+            string abtMsg = @"For source code visit https://github.com/emirgo/SpectrumAnalyzer
 ";
           //  System.Media.SystemSounds.Exclamation.Play();
             MessageBox.Show(abtMsg, "About");
@@ -47,14 +49,14 @@ namespace SpectrumUI
             serialPort1.Handshake = Handshake.None;
 
 
-            Array.Clear(dataPoints,0,512);
-            for(int i=1; i<=512; i++)
+            Array.Clear(dataPoints,0,dataPoints.Length);
+            Array.Clear(freq, 0, freq.Length);
+            for (int i=1; i<=dataLength; i++)
             {
-                freq[i - 1] = (24000 / 512) * i;
+                freq[i - 1] = (20000.0 / dataLength) * i;
             }
             pSignal = plotWindow.plt.PlotBar(freq, dataPoints);
             plotWindow.plt.AxisBounds(0, 20000, 0, 255);
-            timer1.Stop();
         }
     
         void updatePortItems()
@@ -65,6 +67,24 @@ namespace SpectrumUI
             {
                 var port = portToolStripMenuItem.DropDown.Items.Add(ports);
                 port.Click += ComSelection;
+            }
+        }
+
+        void selectFirstPort()
+        {
+            if( SerialPort.GetPortNames().Length == 1 )
+            {
+                if (!serialPort1.IsOpen)
+                {
+                    selectedPort = SerialPort.GetPortNames()[0];
+                    serialPort1.PortName = selectedPort;
+                    serialPort1.Open();
+                    serialPort1.DiscardInBuffer();
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select a port first!", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -108,7 +128,6 @@ namespace SpectrumUI
                 serialPort1.PortName = selectedPort;
                 serialPort1.Open();
                 serialPort1.DiscardInBuffer();
-                timer1.Start();
             }
             catch
             {
@@ -122,7 +141,6 @@ namespace SpectrumUI
                 serialPort1.Close();
                 serialPort1.Open();
                 serialPort1.DiscardInBuffer();
-                timer1.Start();
             }
         }
         private void resizeToolStripMenuItem_Click(object sender, EventArgs e)
@@ -142,7 +160,7 @@ namespace SpectrumUI
 
             // Data event
             int length = serialPort1.BytesToRead;
-            if(length >= 517)
+            if(length >= totalLength+5)
             {
                 byte[] dataIn = new byte[length];
                 serialPort1.Read(dataIn, 0, length);
@@ -170,23 +188,12 @@ namespace SpectrumUI
                     if (dataIn[ind] == 0xFF && dataIn[ind + 1] == 0x02 && dataIn[ind + 2] == 0x12)
                     {
                         // Expecting data
-                        //data = new byte[10];
-                        // Copy 10 bytes
-                        //Array.Copy(dataIn, ind + 3, data, 0, 10);
-                        //int j = 0;
-                        //for (int i = 0; i < 10; i++) // read values
-                        //{
-                        //    dataPoints[j] = (double)data[i];
-                        //    j++;
-                        //}
-                        //dataPoints[j] = (double)dataIn[ind + 3];
                         int j = 0;
-                        for(int i=ind+3; i<(ind+3+512); i++)
+                        for(int i=ind+3; i<(ind+3+dataLength); i++)
                         {
                             dataPoints[j] = (double)dataIn[i];
                             j++;
                         }
-                        label1.BeginInvoke((MethodInvoker)delegate () { label1.Text = "Data updated!"; });
                         updatePlot();
                         serialPort1.WriteLine("");
                     }
@@ -206,22 +213,11 @@ namespace SpectrumUI
             //}
         }
 
-        private void timer1_Tick(object sender, EventArgs e)
-        {
-            // tick interval 100 ms
-            ticks += 1;
-            if(ticks>50)
-            {
-                timer1.Stop();
-                // If no update happenend for 5 sec, reset com port
-                reOpenComPort();
-                ticks = 0;
-            }
-        }
-
         private void button1_Click(object sender, EventArgs e)
         {
-            serialPort1.WriteLine("");
+            selectFirstPort();
+            if(serialPort1.IsOpen) serialPort1.WriteLine("");
+            plotWindow.plt.Axis(0, 20000, 0, 255);
         }
     }
 }

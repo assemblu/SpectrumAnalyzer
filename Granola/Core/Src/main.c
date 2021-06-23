@@ -20,7 +20,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #define sampleSize 24
-#define FFT_SIZE 1024
+#define FFT_SIZE 4096
 #define ARM_MATH_CM4
 #include "arm_math.h"
 /* Private includes ----------------------------------------------------------*/
@@ -78,7 +78,7 @@ uint8_t sendShit=0;
 uint8_t resultMeanCounter=0;
 uint32_t resultMean[10];
 uint16_t fftBufferCounter=0;
-uint8_t buf[517];
+uint8_t buf[5+(FFT_SIZE/2)];
 int inPtr=0,maxIndex;
 float maxValue;
 float fftBuffer[FFT_SIZE*2];
@@ -594,14 +594,14 @@ void DoFFT()
 	buf[3]=0x00;
 	int j=3;
 	if(sendShit){
-		for(int i=1; i<512; i++)
+		for(int i=1; i<FFT_SIZE/2; i++)
 		{
 			buf[j]=(uint8_t)map((int)spec[i],0,maxValue,0,255 );
 			j++;
 		}
-		buf[515]=0xFF;
-		buf[516]=0x04;
-		sendDataPC(buf, sizeof(buf) );
+		buf[(5+FFT_SIZE/2)-2]=0xFF;
+		buf[(5+FFT_SIZE/2)-1]=0x04;
+		sendDataPC(buf, sizeof(buf));
 		//sendUpdateCommand();
 		sendShit=0;
 	}
@@ -637,16 +637,6 @@ int Value_devider_for_screen (uint16_t dataValue)
 	return counter;
 }
 
-
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart2)
-{
-	sendShit=1;
-}
-
-void sendDataPC(uint8_t dataValues[], int size)
-{
-    HAL_UART_Transmit(&huart2,dataValues,size,HAL_MAX_DELAY);
-}
 /* USER CODE END 4 */
 
 /**
