@@ -31,7 +31,7 @@
 
 /* Private typedef ----------------*-------------------------------------------*/
 /* USER CODE BEGIN PTD */
-int Value_devider_for_screen (uint16_t dataValue);
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -152,24 +152,19 @@ int main(void)
 			  DoFFT();
 			  HAL_UART_Receive_IT(&huart2, serialBuf, 1);
 		  }
+    	LCD_FillScreen(WHITE);
     	drawOutline();
     	int drawingBaseOffsetApi = 20;
     	int drawingIncrementOffsetApi = 40;
     	LCD_SetCursor(drawingBaseOffsetApi, 225);
   		LCD_Printf("0Hz");
-  		//LCD_SetCursor(drawingBaseOffsetApi + drawingIncrementOffsetApi*1, 225);
-  		//LCD_Printf("100Hz");
-  		//LCD_SetCursor(drawingBaseOffsetApi + drawingIncrementOffsetApi*2, 225);
-  		//LCD_Printf("1kHz");
-  		//LCD_SetCursor(drawingBaseOffsetApi + drawingIncrementOffsetApi*3, 225);
-  		//LCD_Printf("5kHz");
-  		LCD_SetCursor(80, 225);
+  		LCD_SetCursor(64, 225);
   		LCD_Printf("5K");
-  		LCD_SetCursor(150, 225);
+  		LCD_SetCursor(127, 225);
   		LCD_Printf("10K");
-  		LCD_SetCursor(220, 225);
+  		LCD_SetCursor(190, 225);
   		LCD_Printf("15K");
-  		LCD_SetCursor(290, 225);
+  		LCD_SetCursor(254, 225);
   		LCD_Printf("20K");
 
   		uint16_t x = 0 ;
@@ -179,22 +174,14 @@ int main(void)
   		uint8_t i = 0;
   		for (i = 0; i <= 56; i++ )
   		{
-  			for (z = z; z <= (((1+i)*9)+2); z++)
-  			{
-  				value = value + buf[z];
-  			}
-  			//z++;
-  			value = value / 9;
-  			y[i] =  Value_devider_for_screen(value);
+  			y[i] =  buf[z];
   			value = 0;
+  			z+=29;
   		}
-  		z = 3;
-
+  		z = 0;
   		while ( x != 280)
   		{
-
   			LCD_DrawLine((25 + x), (20 + (200 - y[z])), (25 + x), 220, BLACK);
-
   			x = x + 5;
   			z++;
   		}
@@ -593,12 +580,12 @@ void DoFFT()
 	buf[2]=0x12;
 	buf[3]=0x00;
 	int j=3;
+	for(int i=1; i<FFT_SIZE/2; i++)
+	{
+		buf[j]=(uint8_t)map((int)spec[i],0,maxValue,0,255 );
+		j++;
+	}
 	if(sendShit){
-		for(int i=1; i<FFT_SIZE/2; i++)
-		{
-			buf[j]=(uint8_t)map((int)spec[i],0,maxValue,0,255 );
-			j++;
-		}
 		buf[(5+FFT_SIZE/2)-2]=0xFF;
 		buf[(5+FFT_SIZE/2)-1]=0x04;
 		sendDataPC(buf, sizeof(buf));
@@ -619,23 +606,7 @@ void sendDataPC(uint8_t dataValues[], int size)
     HAL_UART_Transmit(&huart2,dataValues,size,HAL_MAX_DELAY);
 }
 
-int Value_devider_for_screen (uint16_t dataValue)
-{
-	double deviding = 1.28;
-	double value = (double)dataValue;
-	int H = 1;
-	int counter = 0;
-	while (H == 1)
-	{
-		value = value - deviding;
-		counter++;
-		if (value <= deviding)
-		{
-			H = 0;
-		}
-	}
-	return counter;
-}
+
 
 /* USER CODE END 4 */
 
