@@ -74,7 +74,7 @@ uint32_t sample;
 uint16_t rxBuf[sampleSize];
 uint8_t fftBufferFull=0;
 uint8_t serialBuf[12];
-uint8_t sendShit=0;
+uint8_t sendData=0;
 uint8_t resultMeanCounter=0;
 uint32_t resultMean[10];
 uint16_t fftBufferCounter=0;
@@ -585,12 +585,12 @@ void DoFFT()
 		buf[j]=(uint8_t)map((int)spec[i],0,maxValue,0,255 );
 		j++;
 	}
-	if(sendShit){
+	if(sendData){
 		buf[(5+FFT_SIZE/2)-2]=0xFF;
 		buf[(5+FFT_SIZE/2)-1]=0x04;
 		sendDataPC(buf, sizeof(buf));
 		//sendUpdateCommand();
-		sendShit=0;
+		sendData=0;
 	}
 	fftBufferFull=0;
 	fftBufferCounter=0;
@@ -598,7 +598,7 @@ void DoFFT()
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart2)
 {
-	sendShit=1;
+	sendData=1;
 }
 
 void sendDataPC(uint8_t dataValues[], int size)
