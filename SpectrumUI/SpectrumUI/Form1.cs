@@ -33,7 +33,6 @@ namespace SpectrumUI
 
             string abtMsg = @"For source code visit https://github.com/emirgo/SpectrumAnalyzer
 ";
-          //  System.Media.SystemSounds.Exclamation.Play();
             MessageBox.Show(abtMsg, "About");
         }
 
@@ -170,21 +169,6 @@ namespace SpectrumUI
 
                     //If beginning was found
                     byte[] data;
-                    //if (dataIn[ind] == 0xFF && dataIn[ind + 1] == 0x02 && dataIn[ind + 2] == 0x11)
-                    //{
-                    //    // Expecting range
-                    //    data = new byte[20];
-                    //    // Copy 20 bytes
-                    //    Array.Copy(dataIn, ind + 2, data, 0, 20);
-                    //    int j = 0;
-                    //    for (int i = 0; i < 10; i++)
-                    //    {
-                    //        int value16 = data[i] * 16 * 16 + data[i + 1];
-                    //        freq[j] = (24000 / 512) * value16;
-                    //        j++;
-                    //    }
-                    //    label1.BeginInvoke((MethodInvoker)delegate () { label1.Text = "Range updated!"; });
-                    //}
                     if (dataIn[ind] == 0xFF && dataIn[ind + 1] == 0x02 && dataIn[ind + 2] == 0x12)
                     {
                         // Expecting data
@@ -206,11 +190,6 @@ namespace SpectrumUI
                     ticks = 0;
                 }
             }
-            //  byte[] data = new byte[length];
-            //for (int i = 0; i < length; i++)
-            //{
-            //    data[i] = serialport1.readbyte();
-            //}
         }
 
         private void button1_Click(object sender, EventArgs e)
