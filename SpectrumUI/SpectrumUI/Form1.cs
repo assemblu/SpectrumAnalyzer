@@ -71,19 +71,22 @@ namespace SpectrumUI
 
         void selectFirstPort()
         {
-            if( SerialPort.GetPortNames().Length == 1 )
+            if (selectedPort == "")
             {
-                if (!serialPort1.IsOpen)
+                if (SerialPort.GetPortNames().Length == 1)
                 {
-                    selectedPort = SerialPort.GetPortNames()[0];
-                    serialPort1.PortName = selectedPort;
-                    serialPort1.Open();
-                    serialPort1.DiscardInBuffer();
+                    if (!serialPort1.IsOpen)
+                    {
+                        selectedPort = SerialPort.GetPortNames()[0];
+                        serialPort1.PortName = selectedPort;
+                        serialPort1.Open();
+                        serialPort1.DiscardInBuffer();
+                    }
                 }
-            }
-            else
-            {
-                MessageBox.Show("Please select a port first!", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                else
+                {
+                    MessageBox.Show("Please select a port first!", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
         }
 
