@@ -47,7 +47,7 @@ namespace SpectrumUI
             serialPort1.StopBits = StopBits.One;
             serialPort1.Handshake = Handshake.None;
 
-
+	    // Fill arrays with zeros and add them to plot
             Array.Clear(dataPoints,0,dataPoints.Length);
             Array.Clear(freq, 0, freq.Length);
             for (int i=1; i<=dataLength; i++)
@@ -160,22 +160,24 @@ namespace SpectrumUI
         private void serialPort1_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
 
-            // Data event
-            int length = serialPort1.BytesToRead;
-            if(length >= totalLength+5)
+            // Data received event
+
+            int length = serialPort1.BytesToRead; // Length of received data
+            if(length >= totalLength+5) // if length is valid
             {
                 byte[] dataIn = new byte[length];
-                serialPort1.Read(dataIn, 0, length);
-                int ind = Array.IndexOf(dataIn, (byte)0xFF);
+                serialPort1.Read(dataIn, 0, length); // Read in data from buffer
+                int ind = Array.IndexOf(dataIn, (byte)0xFF); // Find index of the beginning in the buffer
                 if (ind >= 0)
                 {
 
                     //If beginning was found
                     byte[] data;
-                    if (dataIn[ind] == 0xFF && dataIn[ind + 1] == 0x02 && dataIn[ind + 2] == 0x12)
+                    if (dataIn[ind] == 0xFF && dataIn[ind + 1] == 0x02 && dataIn[ind + 2] == 0x12) // Check if start and control bytes are valid
                     {
                         // Expecting data
                         int j = 0;
+			// Extract data values from buffer
                         for(int i=ind+3; i<(ind+3+dataLength); i++)
                         {
                             dataPoints[j] = (double)dataIn[i];

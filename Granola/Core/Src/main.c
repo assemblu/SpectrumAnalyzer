@@ -149,6 +149,7 @@ int main(void)
       /* USER CODE BEGIN 3 */
     	if(fftBufferFull==1)
 		  {
+              // If fftBuffer is full calculate FFT and arm UART receive interrupt
 			  DoFFT();
 			  HAL_UART_Receive_IT(&huart2, serialBuf, 1);
 		  }
@@ -361,7 +362,7 @@ static void MX_DMA_Init(void)
   HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
 
 }
-
+// Setup timer 2 for triggering the ADC conversion
 static void MX_TIM2_Init(void)
 {
 
@@ -523,16 +524,20 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+// Event when DMA buffer is half full
 void HAL_ADC_ConvHalfCpltCallback  (ADC_HandleTypeDef *hadc1)
 {
+      // take mean of all samples
 	  for (int i=0;i<sampleSize;i++)
 	  {
 		  sample+=rxBuf[i];
 	  }
 	  sample=sample/sampleSize;
 
+      // If FFT buffer is not full, add the sample, or else set buffer full flag
 	  if(fftBufferCounter<FFT_SIZE)
 	  {
+          // 2048-sample removes DC offset
 		  fftBuffer[fftBufferCounter]=(float)( (int) (2048-sample) );
 		  fftBufferCounter++;
 	  }
@@ -542,6 +547,7 @@ void HAL_ADC_ConvHalfCpltCallback  (ADC_HandleTypeDef *hadc1)
 	  }
 	  sample=0;
 }
+// Same code as half full event
 void HAL_ADC_ConvCpltCallback  (ADC_HandleTypeDef *hadc1)
 {
 	  for (int i=0;i<sampleSize;i++)
@@ -562,45 +568,55 @@ void HAL_ADC_ConvCpltCallback  (ADC_HandleTypeDef *hadc1)
 	  sample=0;
 }
 
+// Converts between two ranges of values. For reference google "arduino map"
 int map(int x, int in_min, int in_max, int out_min, int out_max) {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
+// Calculates FFT of buffer and stores result
 void DoFFT()
 {
 	//Do FFT
 
 	arm_rfft_fast_f32(&fft_handler, fftBuffer, fftResult, 0);
 	//arm_cfft_f32(&fft_handler, fftBuffer, 0, 0);
+    // Complex magnitude of fft result
 	arm_cmplx_mag_f32(fftResult,spec,FFT_SIZE);
+    // Find max value in fft
 	arm_max_f32(spec,FFT_SIZE,&maxValue,&maxIndex);
 	uint8_t meanIterations=5;
 	//uint8_t buf[517];
+    // Add start bytes to buffer and set first data point (DC offset) to 0
 	buf[0]=0xFF;
 	buf[1]=0x02;
 	buf[2]=0x12;
 	buf[3]=0x00;
 	int j=3;
+    // Fill transmission/display buffer with mapped values
 	for(int i=1; i<FFT_SIZE/2; i++)
 	{
 		buf[j]=(uint8_t)map((int)spec[i],0,maxValue,0,255 );
 		j++;
 	}
+    // If PC app requested data then send it via serial port
 	if(sendData){
+        // Append end bytes to transmission buffer
 		buf[(5+FFT_SIZE/2)-2]=0xFF;
 		buf[(5+FFT_SIZE/2)-1]=0x04;
 		sendDataPC(buf, sizeof(buf));
 		//sendUpdateCommand();
 		sendData=0;
 	}
+    // Clear flags
 	fftBufferFull=0;
 	fftBufferCounter=0;
 }
 
+// If a charachter comes in via serial then set sendData flag
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart2)
 {
 	sendData=1;
 }
-
+// Sends range of values via serial port
 void sendDataPC(uint8_t dataValues[], int size)
 {
     HAL_UART_Transmit(&huart2,dataValues,size,HAL_MAX_DELAY);
